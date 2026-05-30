@@ -206,6 +206,18 @@ struct FrameAssignment<Window: WindowType> {
 
     /// Perform the actual application of the frame to the window
     func perform(withWindow window: Window) {
+        // The two AX writes are kept on the main thread to serialize with
+        // main-thread AX notification observers, but coalesced into a single
+        // hop. The `Thread.isMainThread` guard avoids a `main.sync`-from-main
+        // deadlock if a caller (test, future code path) invokes this on main.
+        if Thread.isMainThread {
+            applyFrame(toWindow: window)
+        } else {
+            DispatchQueue.main.sync { applyFrame(toWindow: window) }
+        }
+    }
+
+    private func applyFrame(toWindow window: Window) {
         var finalFrame = self.finalFrame
         var finalOrigin = finalFrame.origin
 
@@ -215,9 +227,7 @@ struct FrameAssignment<Window: WindowType> {
             // Just resize the window first to see what the dimensions end up being
             // Sometimes applications have internal window requirements that are not exposed to us directly
             finalFrame.origin = window.frame().origin
-            DispatchQueue.main.sync {
-                window.setFrame(finalFrame, withThreshold: CGSize(width: 1, height: 1))
-            }
+            window.setFrame(finalFrame, withThreshold: CGSize(width: 1, height: 1))
 
             // With the real height we can update the frame to account for the current size
             finalFrame.size = CGSize(
@@ -230,8 +240,6 @@ struct FrameAssignment<Window: WindowType> {
 
         // Move the window to its final frame
         finalFrame.origin = finalOrigin
-        DispatchQueue.main.sync {
-            window.setFrame(finalFrame, withThreshold: CGSize(width: 1, height: 1))
-        }
+        window.setFrame(finalFrame, withThreshold: CGSize(width: 1, height: 1))
     }
 }
