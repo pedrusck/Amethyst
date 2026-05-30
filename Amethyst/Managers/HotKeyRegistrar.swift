@@ -20,9 +20,14 @@ extension HotKeyManager: HotKeyRegistrar {
         let migrationKey = "migrated-\(name.rawValue)"
         let isMigrated = UserDefaults.standard.bool(forKey: migrationKey)
 
+        // Install (or replace) the dispatch handler and the underlying
+        // `onKeyUp` listener exactly once per name. `setShortcutHandler` is
+        // idempotent and replaces any prior handler, preventing handler
+        // stacking when `registerHotKey` is invoked more than once for the
+        // same `defaultsKey` (e.g. config reload, test reuse).
         defer {
             UserDefaults.standard.set(true, forKey: migrationKey)
-            KeyboardShortcuts.onKeyUp(for: name, action: handler)
+            setShortcutHandler(handler, for: name)
         }
 
         if override {

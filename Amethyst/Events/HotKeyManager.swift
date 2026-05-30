@@ -8,6 +8,7 @@
 
 import Carbon
 import Foundation
+import KeyboardShortcuts
 import Silica
 
 // Type for defining key code.
@@ -29,10 +30,39 @@ class HotKeyManager<Application: ApplicationType>: NSObject {
         return self.constructKeyCodeMap()
     }()
 
+    /// Active handler for each registered shortcut name. The `onKeyUp` listener
+    /// for a given name is installed exactly once and dispatches to the entry
+    /// currently stored here, so repeated registrations replace rather than
+    /// stack the handler.
+    private var shortcutHandlers: [KeyboardShortcuts.Name: HotKeyHandler] = [:]
+
     init(userConfiguration: UserConfiguration) {
         self.userConfiguration = userConfiguration
         super.init()
         _ = constructKeyCodeMap()
+    }
+
+    /// Installs `handler` as the active action for the given shortcut `name`,
+    /// replacing any prior handler. The underlying `KeyboardShortcuts.onKeyUp`
+    /// listener is installed only on the first call for each name; subsequent
+    /// calls simply update the dispatch table, preventing handler stacking.
+    func setShortcutHandler(_ handler: @escaping HotKeyHandler, for name: KeyboardShortcuts.Name) {
+        let isFirstRegistration = (shortcutHandlers[name] == nil)
+        shortcutHandlers[name] = handler
+
+        guard isFirstRegistration else {
+            return
+        }
+
+        KeyboardShortcuts.onKeyUp(for: name) { [weak self] in
+            self?.shortcutHandlers[name]?()
+        }
+    }
+
+    /// Whether a handler has been registered for the given shortcut name.
+    /// Exposed for tests.
+    func hasShortcutHandler(for name: KeyboardShortcuts.Name) -> Bool {
+        return shortcutHandlers[name] != nil
     }
 
     private static func keyCodeForNumber(_ number: NSNumber) -> AMKeyCode {
