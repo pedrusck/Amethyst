@@ -55,8 +55,15 @@ class HotKeyManager<Application: ApplicationType>: NSObject {
         }
 
         KeyboardShortcuts.onKeyUp(for: name) { [weak self] in
-            self?.shortcutHandlers[name]?()
+            self?.dispatchShortcut(for: name)
         }
+    }
+
+    /// Invokes the currently registered handler for `name`, if any. Called by
+    /// the `KeyboardShortcuts.onKeyUp` listener installed in
+    /// `setShortcutHandler(_:for:)`; exposed for direct invocation in tests.
+    func dispatchShortcut(for name: KeyboardShortcuts.Name) {
+        shortcutHandlers[name]?()
     }
 
     /// Whether a handler has been registered for the given shortcut name.
