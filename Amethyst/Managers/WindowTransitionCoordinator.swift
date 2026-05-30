@@ -175,28 +175,52 @@ class WindowTransitionCoordinator<Target: WindowTransitionTarget> {
     }
 
     func pushFocusedWindowToSpaceLeft() {
-        guard let currentFocusedSpace = CGSpacesInfo<Window>.currentFocusedSpace(), let spaces = CGSpacesInfo<Window>.spacesForAllScreens() else {
+        guard let indices = adjacentSpaceIndices(offset: -1) else {
             return
         }
-
-        let filteredSpaces = spaces.filter { $0.type == CGSSpaceTypeUser }
-        guard let index = filteredSpaces.firstIndex(of: currentFocusedSpace), index > 0 else {
-            return
-        }
-
-        pushFocusedWindowToSpace(index - 1, sourceSpace: index)
+        pushFocusedWindowToSpace(indices.target, sourceSpace: indices.source)
     }
 
     func pushFocusedWindowToSpaceRight() {
-        guard let currentFocusedSpace = CGSpacesInfo<Window>.currentFocusedSpace(), let spaces = CGSpacesInfo<Window>.spacesForAllScreens() else {
+        guard let indices = adjacentSpaceIndices(offset: +1) else {
             return
         }
+        pushFocusedWindowToSpace(indices.target, sourceSpace: indices.source)
+    }
 
-        let filteredSpaces = spaces.filter { $0.type == CGSSpaceTypeUser }
-        guard let index = filteredSpaces.firstIndex(of: currentFocusedSpace), index + 1 < spaces.count else {
-            return
+    /// Returns the (target, source) **global** user-space indices for the
+    /// space adjacent to the currently focused space on the focused window's
+    /// screen. `offset` must be -1 (left) or +1 (right).
+    ///
+    /// The returned indices satisfy the contract required by
+    /// `WindowManager.executeTransition`: index == macOS space number - 1
+    /// (i.e. the offset into `spacesForAllScreens(includeOnlyUserSpaces: true)`,
+    /// which maps 1:1 to the `kCGSSymbolicHotKeySpace1 + index` hotkey that
+    /// Silica fires to drag a window to another space).
+    private func adjacentSpaceIndices(offset: Int) -> (target: Int, source: Int)? {
+        guard
+            let focusedWindow = Window.currentlyFocused(),
+            let screen = focusedWindow.screen(),
+            let screenSpaces = CGSpacesInfo<Window>.spacesForScreen(screen, includeOnlyUserSpaces: true),
+            let currentSpace = CGSpacesInfo<Window>.currentSpaceForScreen(screen),
+            let localIndex = screenSpaces.firstIndex(of: currentSpace)
+        else {
+            return nil
         }
 
-        pushFocusedWindowToSpace(index + 1, sourceSpace: index)
+        let targetLocalIndex = localIndex + offset
+        guard targetLocalIndex >= 0, targetLocalIndex < screenSpaces.count else {
+            return nil
+        }
+
+        guard
+            let allUserSpaces = CGSpacesInfo<Window>.spacesForAllScreens(includeOnlyUserSpaces: true),
+            let sourceGlobalIndex = allUserSpaces.firstIndex(of: currentSpace),
+            let targetGlobalIndex = allUserSpaces.firstIndex(of: screenSpaces[targetLocalIndex])
+        else {
+            return nil
+        }
+
+        return (target: targetGlobalIndex, source: sourceGlobalIndex)
     }
 }
