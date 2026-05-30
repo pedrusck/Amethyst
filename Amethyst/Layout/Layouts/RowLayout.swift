@@ -38,7 +38,7 @@ class RowLayout<Window: WindowType>: Layout<Window>, PanedLayout {
     }
 
     func recommendMainPaneRawRatio(rawRatio: CGFloat) {
-        mainPaneRatio = rawRatio
+        mainPaneRatio = LayoutMath.clamp(rawRatio, lower: 0.0, upper: 1.0, fallback: 0.5)
     }
 
     func increaseMainPaneCount() {
@@ -63,8 +63,8 @@ class RowLayout<Window: WindowType>: Layout<Window>, PanedLayout {
         let screenFrame = screen.adjustedFrame()
 
         let mainPaneHeight = floor(screenFrame.size.height * (hasSecondaryPane ? CGFloat(mainPaneRatio) : 1.0))
-        let mainPaneWindowHeight = floor(mainPaneHeight / CGFloat(mainPaneCount))
-        let secondaryPaneWindowHeight = hasSecondaryPane ? floor((screenFrame.size.height - mainPaneHeight) / CGFloat(secondaryPaneCount)) : 0.0
+        let mainPaneWindowHeight = floor(LayoutMath.safeDivide(mainPaneHeight, byCount: mainPaneCount))
+        let secondaryPaneWindowHeight = hasSecondaryPane ? floor(LayoutMath.safeDivide(screenFrame.size.height - mainPaneHeight, byCount: secondaryPaneCount)) : 0.0
 
         return windows.reduce([]) { frameAssignments, window -> [FrameAssignmentOperation<Window>] in
             var assignments = frameAssignments
@@ -73,13 +73,13 @@ class RowLayout<Window: WindowType>: Layout<Window>, PanedLayout {
             var scaleFactor: CGFloat
 
             if isMain {
-                scaleFactor = screenFrame.size.height / mainPaneWindowHeight
+                scaleFactor = LayoutMath.safeDivide(screenFrame.size.height, mainPaneWindowHeight)
                 windowFrame.origin.x = screenFrame.origin.x
                 windowFrame.origin.y = screenFrame.origin.y + (mainPaneWindowHeight * CGFloat(frameAssignments.count))
                 windowFrame.size.width = screenFrame.width
                 windowFrame.size.height = mainPaneWindowHeight
             } else {
-                scaleFactor = screenFrame.size.height / secondaryPaneWindowHeight / CGFloat(secondaryPaneCount)
+                scaleFactor = LayoutMath.safeDivide(LayoutMath.safeDivide(screenFrame.size.height, secondaryPaneWindowHeight), byCount: secondaryPaneCount)
                 windowFrame.origin.x = screenFrame.origin.x
                 windowFrame.origin.y = screenFrame.origin.y + (mainPaneWindowHeight * CGFloat(mainPaneCount)) + (secondaryPaneWindowHeight * CGFloat(frameAssignments.count - mainPaneCount))
                 windowFrame.size.width = screenFrame.width

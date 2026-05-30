@@ -85,10 +85,10 @@ struct QuadruplePaneArrangement {
         // calculate heights
         let screenHeight = screenSize.height
         self.paneWindowHeight = [
-            .main: round(screenHeight / CGFloat(mainPaneCount)),
-            .secondary: secondaryPaneCount == 0 ? 0.0 : round(screenHeight / CGFloat(secondaryPaneCount)),
-            .tertiary: tertiaryPaneCount == 0 ? 0.0 : round(screenHeight / CGFloat(tertiaryPaneCount)),
-            .quaternary: quaternaryPaneCount == 0 ? 0.0 : round(screenHeight / CGFloat(quaternaryPaneCount))
+            .main: round(LayoutMath.safeDivide(screenHeight, byCount: mainPaneCount)),
+            .secondary: secondaryPaneCount == 0 ? 0.0 : round(LayoutMath.safeDivide(screenHeight, byCount: secondaryPaneCount)),
+            .tertiary: tertiaryPaneCount == 0 ? 0.0 : round(LayoutMath.safeDivide(screenHeight, byCount: tertiaryPaneCount)),
+            .quaternary: quaternaryPaneCount == 0 ? 0.0 : round(LayoutMath.safeDivide(screenHeight, byCount: quaternaryPaneCount))
         ]
 
         // calculate widths
@@ -234,12 +234,12 @@ class FourColumnLayout<Window: WindowType>: Layout<Window> {
                 }
             }()
 
-            let scaleFactor: CGFloat = screenFrame.width / {
+            let scaleFactor: CGFloat = LayoutMath.safeDivide(screenFrame.width, {
                 if pane == .main {
                     return paneArrangement.width(.main)
                 }
                 return paneArrangement.width(.secondary) + paneArrangement.width(.tertiary) + paneArrangement.width(.quaternary)
-            }()
+            }())
 
             windowFrame.origin.x = xorigin
             windowFrame.origin.y = screenFrame.origin.y + (windowHeight * CGFloat(paneIndex))
@@ -265,7 +265,7 @@ class FourColumnLayout<Window: WindowType>: Layout<Window> {
 
 extension FourColumnLayout {
     func recommendMainPaneRawRatio(rawRatio: CGFloat) {
-        mainPaneRatio = rawRatio
+        mainPaneRatio = LayoutMath.clamp(rawRatio, lower: 0.0, upper: 1.0, fallback: 0.5)
     }
 
     func increaseMainPaneCount() {

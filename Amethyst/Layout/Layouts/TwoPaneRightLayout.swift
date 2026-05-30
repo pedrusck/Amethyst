@@ -40,7 +40,7 @@ class TwoPaneRightLayout<Window: WindowType>: Layout<Window>, PanedLayout {
     }
 
     func recommendMainPaneRawRatio(rawRatio: CGFloat) {
-        mainPaneRatio = rawRatio
+        mainPaneRatio = LayoutMath.clamp(rawRatio, lower: 0.0, upper: 1.0, fallback: 0.5)
     }
 
     func increaseMainPaneCount() {}
@@ -59,7 +59,7 @@ class TwoPaneRightLayout<Window: WindowType>: Layout<Window>, PanedLayout {
         let hasSecondaryPane = secondaryPaneCount > 0
 
         let screenFrame = screen.adjustedFrame()
-        let isHorizontal = (screenFrame.size.width / screenFrame.size.height) >= 1
+        let isHorizontal = LayoutMath.safeDivide(screenFrame.size.width, screenFrame.size.height) >= 1
 
         let mainPaneWindowHeight = screenFrame.size.height * (!isHorizontal && hasSecondaryPane ? mainPaneRatio : 1)
         let secondaryPaneWindowHeight = isHorizontal ? mainPaneWindowHeight : screenFrame.size.height - mainPaneWindowHeight
@@ -74,13 +74,13 @@ class TwoPaneRightLayout<Window: WindowType>: Layout<Window>, PanedLayout {
             var scaleFactor: CGFloat
 
             if isMain {
-                scaleFactor = screenFrame.size.width / mainPaneWindowWidth
+                scaleFactor = LayoutMath.safeDivide(screenFrame.size.width, mainPaneWindowWidth)
                 windowFrame.origin.x = screenFrame.origin.x + (isHorizontal ? secondaryPaneWindowWidth : 0)
                 windowFrame.origin.y = screenFrame.origin.y
                 windowFrame.size.width = mainPaneWindowWidth
                 windowFrame.size.height = mainPaneWindowHeight
             } else {
-                scaleFactor = screenFrame.size.width / secondaryPaneWindowWidth
+                scaleFactor = LayoutMath.safeDivide(screenFrame.size.width, secondaryPaneWindowWidth)
                 windowFrame.origin.x = screenFrame.origin.x
                 windowFrame.origin.y = screenFrame.origin.y + (isHorizontal ? 0 : mainPaneWindowHeight)
                 windowFrame.size.width = secondaryPaneWindowWidth

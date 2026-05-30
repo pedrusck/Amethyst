@@ -38,7 +38,7 @@ class WideLayout<Window: WindowType>: Layout<Window>, PanedLayout {
     }
 
     func recommendMainPaneRawRatio(rawRatio: CGFloat) {
-        mainPaneRatio = rawRatio
+        mainPaneRatio = LayoutMath.clamp(rawRatio, lower: 0.0, upper: 1.0, fallback: 0.5)
     }
 
     func increaseMainPaneCount() {
@@ -64,8 +64,8 @@ class WideLayout<Window: WindowType>: Layout<Window>, PanedLayout {
         let mainPaneWindowHeight = round(screenFrame.height * CGFloat(hasSecondaryPane ? mainPaneRatio : 1))
         let secondaryPaneWindowHeight = screenFrame.height - mainPaneWindowHeight
 
-        let mainPaneWindowWidth = round(screenFrame.width / CGFloat(mainPaneCount))
-        let secondaryPaneWindowWidth = hasSecondaryPane ? round(screenFrame.width / CGFloat(secondaryPaneCount)) : 0.0
+        let mainPaneWindowWidth = round(LayoutMath.safeDivide(screenFrame.width, byCount: mainPaneCount))
+        let secondaryPaneWindowWidth = hasSecondaryPane ? round(LayoutMath.safeDivide(screenFrame.width, byCount: secondaryPaneCount)) : 0.0
 
         return windows.reduce([]) { frameAssignments, window -> [FrameAssignmentOperation<Window>] in
             var assignments = frameAssignments
@@ -74,13 +74,13 @@ class WideLayout<Window: WindowType>: Layout<Window>, PanedLayout {
             var scaleFactor: CGFloat
 
             if isMain {
-                scaleFactor = screenFrame.height / mainPaneWindowHeight
+                scaleFactor = LayoutMath.safeDivide(screenFrame.height, mainPaneWindowHeight)
                 windowFrame.origin.x = screenFrame.origin.x + (mainPaneWindowWidth * CGFloat(frameAssignments.count))
                 windowFrame.origin.y = screenFrame.origin.y
                 windowFrame.size.width = mainPaneWindowWidth
                 windowFrame.size.height = mainPaneWindowHeight
             } else {
-                scaleFactor = screenFrame.height / secondaryPaneWindowHeight
+                scaleFactor = LayoutMath.safeDivide(screenFrame.height, secondaryPaneWindowHeight)
                 windowFrame.origin.x = screenFrame.origin.x + (secondaryPaneWindowWidth * CGFloat(frameAssignments.count - mainPaneCount))
                 windowFrame.origin.y = screenFrame.origin.y + mainPaneWindowHeight
                 windowFrame.size.width = secondaryPaneWindowWidth

@@ -51,10 +51,10 @@ class WidescreenTallLayout<Window: WindowType>: Layout<Window> {
         let screenFrame = screen.adjustedFrame()
 
         let mainPaneWindowHeight = screenFrame.height
-        let secondaryPaneWindowHeight = hasSecondaryPane ? round(screenFrame.height / CGFloat(secondaryPaneCount)) : 0.0
+        let secondaryPaneWindowHeight = hasSecondaryPane ? round(LayoutMath.safeDivide(screenFrame.height, byCount: secondaryPaneCount)) : 0.0
 
         let mainPaneWidth = round(screenFrame.size.width * (hasSecondaryPane ? CGFloat(mainPaneRatio) : 1.0))
-        let mainPaneWindowWidth = round(mainPaneWidth / CGFloat(mainPaneCount))
+        let mainPaneWindowWidth = round(LayoutMath.safeDivide(mainPaneWidth, byCount: mainPaneCount))
         let secondaryPaneWindowWidth = screenFrame.width - mainPaneWidth
 
         return windows.reduce([]) { frameAssignments, window -> [FrameAssignmentOperation<Window>] in
@@ -65,7 +65,7 @@ class WidescreenTallLayout<Window: WindowType>: Layout<Window> {
             let scaleFactor: CGFloat
 
             if isMain {
-                scaleFactor = CGFloat(screenFrame.size.width / mainPaneWindowWidth) / CGFloat(mainPaneCount)
+                scaleFactor = LayoutMath.safeDivide(LayoutMath.safeDivide(screenFrame.size.width, mainPaneWindowWidth), byCount: mainPaneCount)
                 windowFrame.origin.x = screenFrame.origin.x + mainPaneWindowWidth * CGFloat(windowIndex)
                 if type(of: self).isRight {
                     windowFrame.origin.x += secondaryPaneWindowWidth
@@ -74,7 +74,7 @@ class WidescreenTallLayout<Window: WindowType>: Layout<Window> {
                 windowFrame.size.width = mainPaneWindowWidth
                 windowFrame.size.height = mainPaneWindowHeight
             } else {
-                scaleFactor = CGFloat(screenFrame.size.width / secondaryPaneWindowWidth)
+                scaleFactor = LayoutMath.safeDivide(screenFrame.size.width, secondaryPaneWindowWidth)
                 windowFrame.origin.x = screenFrame.origin.x + mainPaneWidth
                 windowFrame.origin.y = screenFrame.origin.y + (secondaryPaneWindowHeight * CGFloat(windowIndex - mainPaneCount))
                 windowFrame.size.width = secondaryPaneWindowWidth
@@ -101,7 +101,7 @@ class WidescreenTallLayout<Window: WindowType>: Layout<Window> {
 
 extension WidescreenTallLayout: PanedLayout {
     func recommendMainPaneRawRatio(rawRatio: CGFloat) {
-        mainPaneRatio = rawRatio
+        mainPaneRatio = LayoutMath.clamp(rawRatio, lower: 0.0, upper: 1.0, fallback: 0.5)
     }
 
     func increaseMainPaneCount() {
