@@ -313,6 +313,26 @@ class ThreeColumnLayoutTests: QuickSpec {
                 ])
             }
 
+            describe("ratio sanitization") {
+                it("accepts a ratio of 0") {
+                    let layout = ThreeColumnMiddleLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: 0)
+                    expect(layout.mainPaneRatio).to(equal(0))
+                }
+
+                it("accepts a ratio of 1") {
+                    let layout = ThreeColumnMiddleLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: 1)
+                    expect(layout.mainPaneRatio).to(equal(1))
+                }
+
+                it("coerces NaN to the 0.5 fallback") {
+                    let layout = ThreeColumnMiddleLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: .nan)
+                    expect(layout.mainPaneRatio).to(equal(0.5))
+                }
+            }
+
             describe("coding") {
                 it("encodes and decodes") {
                     let layout = ThreeColumnMiddleLayout<TestWindow>()
@@ -542,6 +562,26 @@ class ThreeColumnLayoutTests: QuickSpec {
                 ])
             }
 
+            describe("ratio sanitization") {
+                it("accepts a ratio of 0") {
+                    let layout = ThreeColumnLeftLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: 0)
+                    expect(layout.mainPaneRatio).to(equal(0))
+                }
+
+                it("accepts a ratio of 1") {
+                    let layout = ThreeColumnLeftLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: 1)
+                    expect(layout.mainPaneRatio).to(equal(1))
+                }
+
+                it("coerces NaN to the 0.5 fallback") {
+                    let layout = ThreeColumnLeftLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: .nan)
+                    expect(layout.mainPaneRatio).to(equal(0.5))
+                }
+            }
+
             describe("coding") {
                 it("encodes and decodes") {
                     let layout = ThreeColumnLeftLayout<TestWindow>()
@@ -769,6 +809,26 @@ class ThreeColumnLayoutTests: QuickSpec {
                     CGRect(x: 0, y: 0, width: 750, height: 1000),
                     CGRect(x: 750, y: 0, width: 750, height: 1000)
                 ])
+            }
+
+            describe("ratio sanitization") {
+                it("accepts a ratio of 0") {
+                    let layout = ThreeColumnRightLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: 0)
+                    expect(layout.mainPaneRatio).to(equal(0))
+                }
+
+                it("accepts a ratio of 1") {
+                    let layout = ThreeColumnRightLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: 1)
+                    expect(layout.mainPaneRatio).to(equal(1))
+                }
+
+                it("coerces NaN to the 0.5 fallback") {
+                    let layout = ThreeColumnRightLayout<TestWindow>()
+                    layout.recommendMainPaneRawRatio(rawRatio: .nan)
+                    expect(layout.mainPaneRatio).to(equal(0.5))
+                }
             }
 
             describe("coding") {

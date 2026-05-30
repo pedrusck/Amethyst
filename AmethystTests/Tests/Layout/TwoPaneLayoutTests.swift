@@ -385,6 +385,26 @@ class TwoPaneLayoutTests: QuickSpec {
             }
         }
 
+        describe("ratio sanitization") {
+            it("accepts a ratio of 0") {
+                let layout = TwoPaneLayout<TestWindow>()
+                layout.recommendMainPaneRawRatio(rawRatio: 0)
+                expect(layout.mainPaneRatio).to(equal(0))
+            }
+
+            it("accepts a ratio of 1") {
+                let layout = TwoPaneLayout<TestWindow>()
+                layout.recommendMainPaneRawRatio(rawRatio: 1)
+                expect(layout.mainPaneRatio).to(equal(1))
+            }
+
+            it("coerces NaN to the 0.5 fallback") {
+                let layout = TwoPaneLayout<TestWindow>()
+                layout.recommendMainPaneRawRatio(rawRatio: .nan)
+                expect(layout.mainPaneRatio).to(equal(0.5))
+            }
+        }
+
         describe("coding") {
             it("encodes and decodes") {
                 let layout = TwoPaneLayout<TestWindow>()
