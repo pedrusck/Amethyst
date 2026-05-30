@@ -203,20 +203,53 @@ class WindowTransitionCoordinator<Target: WindowTransitionTarget> {
             let screen = focusedWindow.screen(),
             let screenSpaces = CGSpacesInfo<Window>.spacesForScreen(screen, includeOnlyUserSpaces: true),
             let currentSpace = CGSpacesInfo<Window>.currentSpaceForScreen(screen),
-            let localIndex = screenSpaces.firstIndex(of: currentSpace)
+            let allUserSpaces = CGSpacesInfo<Window>.spacesForAllScreens(includeOnlyUserSpaces: true)
         else {
             return nil
         }
 
+        return Self.adjacentSpaceIndices(
+            offset: offset,
+            screenUserSpaces: screenSpaces,
+            currentSpace: currentSpace,
+            allUserSpaces: allUserSpaces
+        )
+    }
+
+    /// Pure, side-effect-free index math for `adjacentSpaceIndices(offset:)`,
+    /// exposed at internal visibility so it can be unit-tested without mocking
+    /// the macOS Core Graphics / Spaces APIs.
+    ///
+    /// - Parameters:
+    ///   - offset: -1 for "left", +1 for "right".
+    ///   - screenUserSpaces: The user spaces on the focused window's screen,
+    ///     in display order.
+    ///   - currentSpace: The currently focused space (must be a member of
+    ///     `screenUserSpaces`).
+    ///   - allUserSpaces: All user spaces across every screen, in the order
+    ///     macOS exposes them — this order is what `kCGSSymbolicHotKeySpaceN`
+    ///     selects (i.e. `index == macOSSpaceNumber - 1`).
+    /// - Returns: `(target, source)` global user-space indices, or `nil` if
+    ///   the move would leave the focused screen, the current space cannot be
+    ///   located, or any of the inputs are inconsistent.
+    static func adjacentSpaceIndices(
+        offset: Int,
+        screenUserSpaces: [Space],
+        currentSpace: Space,
+        allUserSpaces: [Space]
+    ) -> (target: Int, source: Int)? {
+        guard let localIndex = screenUserSpaces.firstIndex(of: currentSpace) else {
+            return nil
+        }
+
         let targetLocalIndex = localIndex + offset
-        guard targetLocalIndex >= 0, targetLocalIndex < screenSpaces.count else {
+        guard targetLocalIndex >= 0, targetLocalIndex < screenUserSpaces.count else {
             return nil
         }
 
         guard
-            let allUserSpaces = CGSpacesInfo<Window>.spacesForAllScreens(includeOnlyUserSpaces: true),
             let sourceGlobalIndex = allUserSpaces.firstIndex(of: currentSpace),
-            let targetGlobalIndex = allUserSpaces.firstIndex(of: screenSpaces[targetLocalIndex])
+            let targetGlobalIndex = allUserSpaces.firstIndex(of: screenUserSpaces[targetLocalIndex])
         else {
             return nil
         }
