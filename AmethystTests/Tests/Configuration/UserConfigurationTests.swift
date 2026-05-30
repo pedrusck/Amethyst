@@ -771,5 +771,77 @@ class UserConfigurationTests: QuickSpec {
                 }
             }
         }
+
+        describe("hot-key handler dispatch") {
+            it("invokes the handler on the main thread") {
+                let configuration = UserConfiguration(storage: TestConfigurationStorage())
+                configuration.accessibilityPermissionProvider = { true }
+                configuration.configurationYAML = ["test": ["mod": "mod1", "key": "1"]]
+                configuration.configurationJSON = nil
+                configuration.modifier1 = configuration.modifierFlagsForStrings(["command"])
+
+                let registrar = TestHotKeyRegistrar()
+                var observedIsMainThread: Bool?
+                let didRun = self.expectation(description: "handler ran")
+
+                configuration.constructCommand(for: registrar, commandKey: "test", handler: {
+                    observedIsMainThread = Thread.isMainThread
+                    didRun.fulfill()
+                })
+
+                DispatchQueue.global(qos: .userInitiated).async {
+                    registrar.handler?()
+                }
+
+                self.wait(for: [didRun], timeout: 1.0)
+                expect(observedIsMainThread).to(equal(true))
+            }
+
+            it("invokes the wrapped handler asynchronously") {
+                let configuration = UserConfiguration(storage: TestConfigurationStorage())
+                configuration.accessibilityPermissionProvider = { true }
+                configuration.configurationYAML = ["test": ["mod": "mod1", "key": "1"]]
+                configuration.configurationJSON = nil
+                configuration.modifier1 = configuration.modifierFlagsForStrings(["command"])
+
+                let registrar = TestHotKeyRegistrar()
+                var ran = false
+                let didRun = self.expectation(description: "handler ran")
+
+                configuration.constructCommand(for: registrar, commandKey: "test", handler: {
+                    ran = true
+                    didRun.fulfill()
+                })
+
+                registrar.handler?()
+                // Invocation is queued asynchronously on main; must not have run yet
+                // since we are still synchronously executing on the main thread.
+                expect(ran).to(beFalse())
+
+                self.wait(for: [didRun], timeout: 1.0)
+                expect(ran).to(beTrue())
+            }
+
+            it("skips the handler when accessibility permissions are denied") {
+                let configuration = UserConfiguration(storage: TestConfigurationStorage())
+                configuration.accessibilityPermissionProvider = { false }
+                configuration.configurationYAML = ["test": ["mod": "mod1", "key": "1"]]
+                configuration.configurationJSON = nil
+                configuration.modifier1 = configuration.modifierFlagsForStrings(["command"])
+
+                let registrar = TestHotKeyRegistrar()
+                var ran = false
+
+                configuration.constructCommand(for: registrar, commandKey: "test", handler: {
+                    ran = true
+                })
+
+                registrar.handler?()
+                // Run the main runloop briefly so any (incorrect) dispatched work
+                // would have a chance to execute.
+                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+                expect(ran).to(beFalse())
+            }
+        }
     }
 }
