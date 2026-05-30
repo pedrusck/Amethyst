@@ -192,9 +192,7 @@ class HotKeyManager<Application: ApplicationType>: NSObject {
         }
 
         constructCommandWithCommandKey(CommandKey.displayCurrentLayout.rawValue) {
-            DispatchQueue.main.async {
-                windowManager.displayCurrentLayout()
-            }
+            windowManager.displayCurrentLayout()
         }
 
         (1...5).forEach { screenNumber in
@@ -262,17 +260,13 @@ class HotKeyManager<Application: ApplicationType>: NSObject {
         constructCommandWithCommandKey(CommandKey.increaseWindowMaxCount.rawValue) {
             self.userConfiguration.increaseWindowMaxCount()
             windowManager.markAllScreensForReflow()
-            DispatchQueue.main.async {
-                windowManager.displayWindowCountHUD()
-            }
+            windowManager.displayWindowCountHUD()
         }
 
         constructCommandWithCommandKey(CommandKey.decreaseWindowMaxCount.rawValue) {
             self.userConfiguration.decreaseWindowMaxCount()
             windowManager.markAllScreensForReflow()
-            DispatchQueue.main.async {
-                windowManager.displayWindowCountHUD()
-            }
+            windowManager.displayWindowCountHUD()
         }
 
         LayoutType<Application.Window>.availableLayoutStrings().forEach { (layoutKey, _) in

@@ -223,8 +223,18 @@ class UserConfiguration: NSObject {
     var modifier3: AMModifierFlags?
     var modifier4: AMModifierFlags?
 
+    /// Override for the accessibility-permission gate used inside hot-key
+    /// dispatch. Production defaults to consulting the real AX API via
+    /// `confirmAccessibilityPermissions()`; tests inject a deterministic
+    /// closure so the dispatch path can be exercised without AX trust.
+    var accessibilityPermissionProvider: () -> Bool = { false }
+
     init(storage: ConfigurationStorage) {
         self.storage = storage
+        super.init()
+        self.accessibilityPermissionProvider = { [weak self] in
+            self?.confirmAccessibilityPermissions() ?? false
+        }
     }
 
     override convenience init() {
@@ -479,7 +489,7 @@ class UserConfiguration: NSObject {
                 return
             }
 
-            let hasAccessibilityPermissions = self.confirmAccessibilityPermissions()
+            let hasAccessibilityPermissions = self.accessibilityPermissionProvider()
 
             if self.hasAccessibilityPermissions != hasAccessibilityPermissions {
                 self.hasAccessibilityPermissions = hasAccessibilityPermissions
@@ -489,7 +499,7 @@ class UserConfiguration: NSObject {
                 return
             }
 
-            DispatchQueue.global(qos: .userInitiated).async {
+            DispatchQueue.main.async {
                 handler()
             }
         }
